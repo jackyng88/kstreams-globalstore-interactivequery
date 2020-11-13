@@ -15,6 +15,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import org.jboss.logging.Logger;
+
 
 @ApplicationScoped
 @Path("/global-store")
@@ -23,14 +25,20 @@ public class GlobalStoreEndpoint {
     @Inject
     GlobalStoreInteractiveQuery interactiveQueries;
 
+    private static final Logger LOG = Logger.getLogger(GlobalStoreEndpoint.class);
+
     @GET
-    @Path("/data/{user_id}")
+    @Path("data/{user_id}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response getGlobalStoreData(@PathParam("user_id") String user_id) {
         FinancialMessageDataResult result = interactiveQueries.getFinancialMessageData(user_id);
 
-        if (result.getResult().isPresent()) {                     
+        LOG.info("Result -  " + result);
+        
+
+        if (result.getResult().isPresent()) {         
+            LOG.info("Result is present -  " + result);            
             return Response.ok(result.getResult().get()).build();
         }
         else if (result.getHost().isPresent()) {                  
@@ -42,10 +50,21 @@ public class GlobalStoreEndpoint {
             return Response.status(Status.NOT_FOUND.getStatusCode(),
                     "No data found from global store for " + user_id).build();
         }
+
+    
+        // if (result.getHost().isPresent()) {                  
+        //     URI otherUri = getOtherUri(result.getHost().get(), result.getPort().getAsInt(),
+        //             user_id);
+        //     return Response.seeOther(otherUri).build();
+        // }
+        // else {                                                    
+        //     return Response.status(Status.NOT_FOUND.getStatusCode(),
+        //             "No data found from global store for " + user_id).build();
+        // }
     }
 
     @GET
-    @Path("/meta-data")
+    @Path("meta-data")
     @Produces(MediaType.APPLICATION_JSON)
     public List<PipelineMetadata> getMetaData() {                 
         return interactiveQueries.getMetaData();

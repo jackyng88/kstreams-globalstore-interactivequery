@@ -34,6 +34,7 @@ public class GlobalStoreInteractiveQuery {
 
 
     public List<PipelineMetadata> getMetaData() {
+        LOG.infov("Returning Streams Store Metadata");
         return streams.allMetadataForStore(GlobalStoreTopology.GLOBAL_STORE)
                 .stream()
                 .map(m -> new PipelineMetadata(
@@ -46,15 +47,22 @@ public class GlobalStoreInteractiveQuery {
     }
 
     public FinancialMessageDataResult getFinancialMessageData(String user_id) {
-        StreamsMetadata metadata = streams.metadataForKey(
+        // StreamsMetadata metadata = streams.metadataForKey(
+        //         GlobalStoreTopology.GLOBAL_STORE,
+        //         user_id,
+        //         Serdes.String().serializer());
+
+        KeyQueryMetadata queryMetadata = streams.queryMetadataForKey(
                 GlobalStoreTopology.GLOBAL_STORE,
                 user_id,
                 Serdes.String().serializer());
 
-        if (metadata == null || metadata == StreamsMetadata.NOT_AVAILABLE) {
+        
+
+        if (queryMetadata == null || queryMetadata == KeyQueryMetadata.NOT_AVAILABLE) {
             LOG.warnv("Found no metadata for key {0}", user_id);
             return FinancialMessageDataResult.notFound();
-        } else if (metadata.host().equals(host)) {
+        } else if (queryMetadata.getActiveHost().host().equals(host)) {
             LOG.infov("Found data for key {0} locally", user_id);
             FinancialMessage result = getGlobalStore().get(user_id);
 
@@ -64,8 +72,8 @@ public class GlobalStoreInteractiveQuery {
                 return FinancialMessageDataResult.notFound();
             }
         } else {
-            LOG.infov("Found data for key {0} on remote host {1}:{2}", user_id, metadata.host(), metadata.port());
-            return FinancialMessageDataResult.foundRemotely(metadata.host(), metadata.port());
+            LOG.infov("Found data for key {0} on remote host {1}:{2}", user_id, queryMetadata.getActiveHost().host(), queryMetadata.getActiveHost().port());
+            return FinancialMessageDataResult.foundRemotely(queryMetadata.getActiveHost().host(), queryMetadata.getActiveHost().port());
         }
     }
 
